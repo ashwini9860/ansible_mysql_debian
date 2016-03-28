@@ -1,0 +1,41 @@
+- name: install mysql
+  hosts: node1
+  remote_user: root
+  sudo: True
+  vars:
+   mysql_root_pass: test
+
+  tasks:
+
+   - name: Set MySQL root password before installing
+     debconf: name='mysql-server' question='mysql-server/root_password' value='{{mysql_root_pass | quote}}' vtype='password'
+
+   - name: Confirm MySQL root password before installing
+     debconf: name='mysql-server' question='mysql-server/root_password_again' value='{{mysql_root_pass | quote}}' vtype='password'
+
+   - name: install mysql-server
+     apt: name={{ item }} state=present
+     sudo: yes
+     with_items:
+      - mysql-server
+      - python-mysqldb
+      - mysql-client
+
+#   - name: Removes all anonymous user accounts
+#     mysql_user: name='' host=node1 state=absent login_password={{mysql_root_pass}}
+
+
+#   - name: Removes anonymous user account for ansible host
+#     action: mysql_user user='' host=node1 state=absent login_password={{mysql_root_pass}}
+
+#   - name: Removes anonymous user account for localhost
+#     action: mysql_user user='' state=absent login_password={{mysql_root_pass}}
+
+   - name: Create database
+     mysql_db: db=bobdata state=present login_password={{mysql_root_pass}}
+
+   - name: create user with all privilleges
+     mysql_user: name=bob password=12345 priv=*.*:ALL state=present login_password={{mysql_root_pass}}
+   
+   - name: remove the MySQL performance_schema database
+     action: mysql_db  db='performance_schema' state=absent login_password={{mysql_root_pass}}
